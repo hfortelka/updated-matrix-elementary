@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iReady Intervention Matrix</title>
+    <!-- Removed Tailwind CSS CDN and custom style block -->
+</head>
+<body style="min-height: 100vh; background-color: #E0F2F7; padding: 32px; display: flex; flex-direction: column; align-items: center; font-family: sans-serif;">
+
+    <h1 style="font-size: 32px; font-weight: bold; color: #4338CA; margin-bottom: 32px; text-align: center;">
+        iReady Intervention Matrix
+    </h1>
+    <p style="font-size: 18px; color: #4B5563; margin-bottom: 24px; text-align: center; max-width: 768px;">
+        Select a subject and optionally a sub-category, then navigate the matrix below to find targeted interventions.
+        Click on any cell to reveal specific interventions and access printable assessments with practice problems.
+    </p>
+
+    <!-- Subject Selection Buttons -->
+    <div style="margin-bottom: 16px; display: flex; gap: 16px;">
+        <button id="readingSubjectBtn" style="padding: 12px 32px; border-radius: 9999px; font-size: 18px; font-weight: bold; border: 2px solid;">
+            Reading
+        </button>
+        <button id="mathSubjectBtn" style="padding: 12px 32px; border-radius: 9999px; font-size: 18px; font-weight: bold; border: 2px solid;">
+            Math
+        </button>
+    </div>
+
+    <!-- Subcategory Selection Buttons (Conditional) -->
+    <div id="subCategoryButtonsContainer" style="margin-bottom: 32px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 960px;">
+        <!-- Subcategory buttons will be rendered here by JavaScript -->
+    </div>
+
+    <div style="background-color: #FFFFFF; border-radius: 8px; padding: 24px; border: 4px solid #90CAF9; max-width: 100%; overflow-x: auto;">
+        <div style="display: grid; gap: 8px; min-width: 700px;" id="matrixContainer">
+            <!-- Matrix content will be rendered here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- The Modal Structure -->
+    <div id="interventionModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(107, 114, 128, 0.5); display: none; justify-content: center; align-items: center; padding: 16px; z-index: 50;">
+        <div style="background-color: #FFFFFF; border-radius: 8px; padding: 24px; max-width: 768px; width: 100%; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E7EB; padding-bottom: 12px; margin-bottom: 16px;">
+                <h3 id="modalTitle" style="font-size: 20px; font-weight: bold; color: #374151;"></h3>
+                <button id="modalCloseBtn" style="color: #6B7280; font-size: 24px; font-weight: bold; background: none; border: none; cursor: pointer;">
+                    &times;
+                </button>
+            </div>
+            <div id="modalBody" style="color: #4B5563;">
+                <!-- Modal content will be rendered here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Define fixed subcategories for Reading and Math
+        const readingSubcategories = ['Phonological Awareness', 'Phonics', 'Vocabulary', 'Comprehension'];
+        const mathSubcategories = ['Number & Operations', 'Algebraic Thinking', 'Geometry', 'Measurement & Data', 'Problem Solving'];
+
+        // Helper function to create a generic intervention for a given subcategory
+        const createGenericIntervention = (grade, scoreLevel, subject, subCategory) => ({
+            id: `${grade}-${scoreLevel.replace(/\s/g, '')}-${subject.substring(0,1)}-${subCategory.replace(/\s/g, '').replace('&', '')}-Generic`,
+            name: `General ${subCategory} Intervention`,
+            problems: [
+                `1. Practice problem for ${subCategory} in Grade ${grade}.`,
+                `2. Another practice problem for ${subCategory}.`,
+                `3. Solve this challenge problem related to ${subCategory}.`,
+                `4. Fill in the blank: The key concept is related to ${subCategory}.`,
+                `5. Explain in your own words what ${subCategory} means.`
+            ],
+            description: `A general intervention for students who are ${scoreLevel.toLowerCase()} in ${subject} - ${subCategory}.`
+        });
+
+        // Sample iReady data structure with expanded Reading and Math subcategories
+        const iReadyData = {};
+
+        // Populate iReadyData for all grades and score levels with all specified subcategories
+        const grades = ['K', '1', '2', '3', '4', '5'];
+        const scoreLevels = [
+            'Far Below Grade Level',
+            'Below Grade Level',
+            'Approaching Grade Level',
+            'On Grade Level'
+        ];
+
+        grades.forEach(grade => {
+            iReadyData[grade] = {};
+            scoreLevels.forEach(scoreLevel => {
+                iReadyData[grade][scoreLevel] = {
+                    "Reading": {},
+                    "Math": {}
+                };
+
+                // Populate Reading Subcategories
+                readingSubcategories.forEach(subCat => {
+                    iReadyData[grade][scoreLevel]["Reading"][subCat] = createGenericIntervention(grade, scoreLevel, 'Reading', subCat);
+                });
+
+                // Populate Math Subcategories
+                mathSubcategories.forEach(subCat => {
+                    iReadyData[grade][scoreLevel]["Math"][subCat] = createGenericIntervention(grade, scoreLevel, 'Math', subCat);
+                });
+            });
+        });
+
+        // Add some specific examples for variety, these will override the generic ones
+        // Grade K, Far Below Grade Level - Reading
+        iReadyData["K"]["Far Below Grade Level"]["Reading"]["Phonological Awareness"] = {
+            id: "K-FB-R-PA-1",
+            name: "Rhyming Words",
+            problems: [
+                "1. Which word rhymes with 'cat'? (dog, bat, sun)",
+                "2. Say two words that rhyme with 'fun'.",
+                "3. Circle the rhyming pair: (chair, bear) (book, table)",
+                "4. What word rhymes with 'house'?",
+                "5. Do 'tree' and 'bee' rhyme? Yes or No."
+            ],
+            description: "Intervention focuses on identifying and producing rhyming words."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Reading"]["Phonics"] = {
+            id: "K-FB-R-PH-1",
+            name: "Letter Sound Recognition (M, A, T)",
+            problems: [
+                "1. What sound does the letter M make?",
+                "2. Circle the picture that starts with the /a/ sound: (apple, banana, dog)",
+                "3. Say a word that starts with the /t/ sound.",
+                "4. Write the letter that makes the /m/ sound.",
+                "5. Which word starts with the same sound as 'apple'? (ant, car, hat)"
+            ],
+            description: "Focuses on recognizing and associating basic letter sounds."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Reading"]["Vocabulary"] = {
+            id: "K-FB-R-VOC-1",
+            name: "Picture Vocabulary",
+            problems: [
+                "1. Point to the 'tree' picture.",
+                "2. What is this a picture of? (show a picture of a car)",
+                "3. Circle the picture of something you can 'eat'.",
+                "4. Draw something that is 'big'.",
+                "5. What does the word 'sleep' mean? (show a picture of sleeping)"
+            ],
+            description: "Introduces basic vocabulary through visual recognition."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Reading"]["Comprehension"] = {
+            id: "K-FB-R-COMP-1",
+            name: "Answering 'Who' Questions",
+            problems: [
+                "1. (Read: 'The boy plays with a red ball.') Who plays with a red ball?",
+                "2. (Read: 'The cat sleeps on the mat.') Who sleeps on the mat?",
+                "3. (Read: 'My mom cooks dinner.') Who cooks dinner?",
+                "4. (Read: 'The girl sings a song.') Who sings a song?",
+                "5. (Read: 'The dog barks loudly.') Who barks loudly?"
+            ],
+            description: "Focuses on identifying characters in simple sentences/stories."
+        };
+
+        // Grade K, Far Below Grade Level - Math
+        iReadyData["K"]["Far Below Grade Level"]["Math"]["Number & Operations"] = {
+            id: "K-FB-M-NO-1",
+            name: "Counting within 10",
+            problems: [
+                "1. Count the objects: 🍎🍎🍎 (write the number)",
+                "2. How many dots? •••• (write the number)",
+                "3. Circle 5 apples: 🍎🍎🍎🍎🍎🍎🍎",
+                "4. Write the number that comes after 7.",
+                "5. Draw 3 stars."
+            ],
+            description: "Intervention focuses on basic one-to-one correspondence and counting up to 10."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Math"]["Algebraic Thinking"] = {
+            id: "K-FB-M-AT-1",
+            name: "Pattern Recognition (AB patterns)",
+            problems: [
+                "1. Draw the next shape: ▲●▲●?",
+                "2. What comes next? Red, Blue, Red, Blue, ?",
+                "3. Circle the shape that continues the pattern: □△□△ (options: □, △, ○)",
+                "4. Create your own AB pattern using two different shapes.",
+                "5. Fill in the missing part: 🍎🍐🍎 _ 🍎🍐"
+            ],
+            description: "Introduces simple repeating patterns and identifying the next element."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Math"]["Geometry"] = {
+            id: "K-FB-M-GEO-1",
+            name: "Identifying Basic 2D Shapes",
+            problems: [
+                "1. Circle all the squares: (circle, square, triangle, square)",
+                "2. Draw a circle.",
+                "3. How many sides does a triangle have?",
+                "4. Point to something in the room that is a rectangle.",
+                "5. Is a ball a circle or a square?"
+            ],
+            description: "Focuses on recognizing and naming circles, squares, and triangles."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Math"]["Measurement & Data"] = {
+            id: "K-FB-M-MD-1",
+            name: "Comparing Lengths (longer/shorter)",
+            problems: [
+                "1. Draw a long line and a short line.",
+                "2. Circle the pencil that is longer: (picture of two pencils, one long, one short)",
+                "3. Is your arm longer or shorter than your leg?",
+                "4. Who is taller, you or your teacher?",
+                "5. Put these objects in order from shortest to longest: (straw, crayon, paperclip)"
+            ],
+            description: "Compares and orders objects by length."
+        };
+        iReadyData["K"]["Far Below Grade Level"]["Math"]["Problem Solving"] = {
+            id: "K-FB-M-PS-1",
+            name: "Simple Story Problems (Addition/Subtraction readiness)",
+            problems: [
+                "1. You have 2 apples. Your friend gives you 1 more. How many apples do you have?",
+                "2. There are 3 birds on a branch. 1 bird flies away. How many birds are left?",
+                "3. Draw a picture to show: 2 cookies and 2 more cookies.",
+                "4. If you have 4 balloons and 1 pops, how many are left?",
+                "5. Count how many children are in your group. If 1 child leaves, how many are there?"
+            ],
+            description: "Uses concrete examples for early problem-solving skills."
+        };
+
+        // Grade K, Below Grade Level - Reading
+        iReadyData["K"]["Below Grade Level"]["Reading"]["Vocabulary"] = { // Changed to Vocabulary for diversity
+            id: "K-BL-R-VOC-1",
+            name: "Recognizing Common Objects",
+            problems: [
+                "1. Point to the 'book'.",
+                "2. What is this? (show a picture of a chair)",
+                "3. Circle the picture of a 'flower'.",
+                "4. Draw a 'car'.",
+                "5. What do you use to 'drink' water?"
+            ],
+            description: "Focuses on recognizing and naming common objects."
+        };
+        iReadyData["K"]["Below Grade Level"]["Reading"]["Phonological Awareness"] = {
+            id: "K-BL-R-PA-1",
+            name: "Beginning Sounds",
+            problems: [
+                "1. What sound does 'apple' start with?",
+                "2. Say a word that starts with the /b/ sound.",
+                "3. Circle the picture that starts like 'sun': (star, moon, cloud)",
+                "4. What is the first sound in 'dog'?",
+                "5. Do 'fish' and 'frog' start with the same sound?"
+            ],
+            description: "Focuses on identifying initial sounds in words."
+        };
+        iReadyData["K"]["Below Grade Level"]["Reading"]["Phonics"] = {
+            id: "K-BL-R-PH-1",
+            name: "Matching Letters to Sounds (A-E)",
+            problems: [
+                "1. Match the letter A to its sound.",
+                "2. Circle the letter that makes the /d/ sound.",
+                "3. Write the letter for the sound /e/.",
+                "4. Which letter is for 'apple'?",
+                "5. What letter makes the sound in 'boy'?"
+            ],
+            description: "Focuses on matching letters to their corresponding sounds for early learners."
+        };
+        iReadyData["K"]["Below Grade Level"]["Reading"]["Comprehension"] = {
+            id: "K-BL-R-COMP-1",
+            name: "Following Simple Directions",
+            problems: [
+                "1. Draw a circle.",
+                "2. Touch your nose.",
+                "3. Stand up and sit down.",
+                "4. Clap your hands twice.",
+                "5. Point to the door."
+            ],
+            description: "Focuses on understanding and following one-step simple directions."
+        };
+
+        // Grade K, Below Grade Level - Math
+        iReadyData["K"]["Below Grade Level"]["Math"]["Number & Operations"] = {
+            id: "K-BL-M-NO-1",
+            name: "Number Recognition 1-20",
+            problems: [
+                "1. Circle the number 15: 12 5 15 20",
+                "2. Write the number sixteen.",
+                "3. What number comes before 10?",
+                "4. Match the number to the word: 8 (eight, nine, seven)",
+                "5. Count and write the number of fingers on two hands."
+            ],
+            description: "Focuses on recognizing and writing numbers up to 20."
+        };
+        iReadyData["K"]["Below Grade Level"]["Math"]["Algebraic Thinking"] = {
+            id: "K-BL-M-AT-1",
+            name: "Extending AB Patterns",
+            problems: [
+                "1. Draw the next two shapes: 🔺🔹🔺🔹_ _",
+                "2. What comes next: apple, orange, apple, orange, _",
+                "3. Create your own AB pattern using colors.",
+                "4. Fill in the missing part: 🌟🌙🌟 _ 🌟🌙",
+                "5. Draw the pattern: square, circle, square, circle, square, _"
+            ],
+            description: "Extends repeating patterns and identifying missing elements."
+        };
+        iReadyData["K"]["Below Grade Level"]["Math"]["Geometry"] = {
+            id: "K-BL-M-GEO-1",
+            name: "Sorting Shapes",
+            problems: [
+                "1. Circle all the triangles.",
+                "2. Draw a rectangle.",
+                "3. Sort these shapes into two groups: (mix of circles and squares).",
+                "4. Which shape has 4 equal sides?",
+                "5. Group the shapes that have no corners."
+            ],
+            description: "Focuses on sorting shapes based on their attributes."
+        };
+        iReadyData["K"]["Below Grade Level"]["Math"]["Measurement & Data"] = {
+            id: "K-BL-M-MD-1",
+            name: "Comparing Weights (heavier/lighter)",
+            problems: [
+                "1. Circle the object that is heavier: (picture of a feather and a rock).",
+                "2. Is a book heavier or lighter than a pencil?",
+                "3. Draw something that is light.",
+            "4. Which one weighs more: a car or a toy car?",
+                "5. Put these objects in order from lightest to heaviest: (leaf, apple, car toy)."
+            ],
+            description: "Compares weights using simple concepts."
+        };
+        iReadyData["K"]["Below Grade Level"]["Math"]["Problem Solving"] = {
+            id: "K-BL-M-PS-1",
+            name: "Solving 'How Many More/Less' (within 5)",
+            problems: [
+                "1. You have 3 red cars and 2 blue cars. How many more red cars do you have?",
+                "2. There are 4 birds. 1 bird flies away. How many fewer birds are there now?",
+                "3. Draw 5 circles. Cross out 2. How many are left?",
+                "4. If you have 3 cookies and your friend has 5 cookies, who has more? How many more?",
+                "5. I have 2 pens. I need 4 pens. How many more pens do I need?"
+            ],
+            description: "Introduces basic comparison problems (how many more/less) within small numbers."
+        };
+
+        // Grade K, Approaching Grade Level - Reading
+        iReadyData["K"]["Approaching Grade Level"]["Reading"]["Phonological Awareness"] = {
+            id: "K-AP-R-PA-1",
+            name: "Syllable Counting",
+            problems: [
+                "1. Clap the syllables in 'apple'. How many?",
+                "2. How many syllables in 'banana'?",
+                "3. Break 'table' into its syllables.",
+                "4. Say a word with one syllable.",
+                "5. Say a word with two syllables."
+            ],
+            description: "Focuses on counting syllables in words."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Reading"]["Phonics"] = {
+            id: "K-AP-R-PH-1",
+            name: "Blending CVC Words (Oral)",
+            problems: [
+                "1. What word do you hear: /c/ /a/ /t/?",
+                "2. Blend these sounds: /s/ /u/ /n/.",
+                "3. Say the sounds in 'dog', then say the whole word.",
+                "4. What word is /j/ /e/ /t/?",
+                "5. Listen: /h/ /e/ /n/. What's the word?"
+            ],
+            description: "Focuses on orally blending individual sounds into a word."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Reading"]["Vocabulary"] = {
+            id: "K-AP-R-VOC-1",
+            name: "Action Words (Verbs)",
+            problems: [
+                "1. Circle the picture that shows someone 'running'.",
+                "2. What are you doing when you 'eat'?",
+                "3. Draw someone 'jumping'.",
+                "4. What word means to 'sleep'?",
+                "5. Say a word that tells what a dog does."
+            ],
+            description: "Introduces common action words (verbs)."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Reading"]["Comprehension"] = {
+            id: "K-AP-R-COMP-1",
+            name: "Identifying Story Elements (Setting)",
+            problems: [
+                "1. (Read: 'The bunny played in the garden.') Where did the bunny play?",
+                "2. Where does 'Little Red Riding Hood' go?",
+                "3. In the story about a cat, where does the cat live?",
+                "4. Draw the place where the story happened.",
+                "5. Was the story in a house or outside?"
+            ],
+            description: "Focuses on identifying the setting (where) of a simple story."
+        };
+
+        // Grade K, Approaching Grade Level - Math
+        iReadyData["K"]["Approaching Grade Level"]["Math"]["Number & Operations"] = {
+            id: "K-AP-M-NO-1",
+            name: "Addition within 5 (Representational)",
+            problems: [
+                "1. Draw dots to show 3 + 2 = ?",
+                "2. Circle the correct sum: 1 + 4 = (3, 4, 5)",
+                "3. If you have 2 red apples and 3 green apples, draw them and tell how many total.",
+                "4. What is 2 plus 3?",
+                "5. Solve using fingers: 1 + 2 = ?"
+            ],
+            description: "Introduces addition within 5 using drawings and fingers."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Math"]["Algebraic Thinking"] = {
+            id: "K-AP-M-AT-1",
+            name: "Creating ABAB Patterns",
+            problems: [
+                "1. Create a pattern using two different shapes (e.g., triangle, circle, triangle, circle).",
+                "2. Draw an ABAB pattern with colors.",
+                "3. If the pattern is 'clap, stomp, clap, stomp', what comes next?",
+                "4. Make your own repeating pattern.",
+                "5. Use objects to show an ABAB pattern."
+            ],
+            description: "Focuses on creating and recognizing ABAB patterns."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Math"]["Geometry"] = {
+            id: "K-AP-M-GEO-1",
+            name: "Identifying 3D Shapes (Sphere, Cube)",
+            problems: [
+                "1. Circle the shape that is like a ball: (cube, sphere, cylinder)",
+                "2. What shape is a block?",
+                "3. Name something that is a sphere.",
+                "4. Draw a cube.",
+                "5. Is a shoebox a sphere or a cube?"
+            ],
+            description: "Introduces and identifies spheres and cubes."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Math"]["Measurement & Data"] = {
+            id: "K-AP-M-MD-1",
+            name: "Comparing Capacities (holds more/less)",
+            problems: [
+                "1. Which cup holds more water: (picture of small and large cup)?",
+                "2. Is a bathtub or a sink full of water 'more' water?",
+                "3. Draw a container that holds less.",
+                "4. Which holds more milk: a glass or a gallon jug?",
+                "5. If you have two bowls, and one is bigger, which one can hold more soup?"
+            ],
+            description: "Compares capacities of containers."
+        };
+        iReadyData["K"]["Approaching Grade Level"]["Math"]["Problem Solving"] = {
+            id: "K-AP-M-PS-1",
+            name: "Solving Addition Story Problems (within 5)",
+            problems: [
+                "1. Maria has 2 red flowers and 3 yellow flowers. How many flowers does she have in all?",
+                "2. There are 1 bird on a tree and 4 birds on the ground. How many birds altogether?",
+                "3. You have 3 cookies. Your friend gives you 2 more. How many cookies do you have now?",
+                "4. Sarah sees 1 dog and 3 cats. How many animals does she see?",
+                "5. Draw a story problem for 2 + 3 = 5."
+            ],
+            description: "Applies addition concepts to simple story problems within 5."
+        };
+
+        // Grade K, On Grade Level - Reading
+        iReadyData["K"]["On Grade Level"]["Reading"]["Phonological Awareness"] = {
+            id: "K-OG-R-PA-1",
+            name: "Segmenting Words into Sounds (CVC)",
+            problems: [
+                "1. Say the sounds in 'dog'.",
+                "2. How many sounds in 'cat'?",
+                "3. What are the sounds in 'sun'?",
+                "4. Break 'run' into its individual sounds.",
+                "5. Tell me the sounds you hear in 'sit'."
+            ],
+            description: "Focuses on segmenting words into their phonemes (sounds)."
+        };
+        iReadyData["K"]["On Grade Level"]["Reading"]["Phonics"] = {
+            id: "K-OG-R-PH-1",
+            name: "Reading CVC Words",
+            problems: [
+                "1. Read the word: 'run'.",
+                "2. Read the word: 'sit'.",
+                "3. Read the word: 'hot'.",
+                "4. Read the word: 'bug'.",
+                "5. Read the word: 'pen'."
+            ],
+            description: "Focuses on fluently reading CVC words."
+        };
+        iReadyData["K"]["On Grade Level"]["Reading"]["Vocabulary"] = {
+            id: "K-OG-R-VOC-1",
+            name: "Categorizing Objects",
+            problems: [
+                "1. Circle the animals: (dog, car, bird, tree)",
+                "2. Name two fruits.",
+                "3. Which doesn't belong: (apple, banana, carrot, orange)?",
+                "4. Group these items: (shirt, pants, hat, shoe) - what category are they?",
+                "5. Name things you find in a kitchen."
+            ],
+            description: "Develops skills in categorizing objects based on common attributes."
+        };
+        iReadyData["K"]["On Grade Level"]["Reading"]["Comprehension"] = {
+            id: "K-OG-R-COMP-1",
+            name: "Retelling Simple Stories",
+            problems: [
+                "1. After listening to 'Goldilocks and the Three Bears', retell the story in your own words.",
+                "2. What happened at the beginning, middle, and end of the story?",
+                "3. Tell your favorite part of the story.",
+                "4. If you told this story to a friend, what are the most important things to remember?",
+                "5. Who were the characters and what was the problem?"
+            ],
+            description: "Focuses on retelling key events and characters of a simple story."
+        };
+
+        // Grade K, On Grade Level - Math
+        iReadyData["K"]["On Grade Level"]["Math"]["Number & Operations"] = {
+            id: "K-OG-M-NO-1",
+            name: "Addition and Subtraction within 10",
+            problems: [
+                "1. 5 + 3 = ?",
+                "2. 7 - 2 = ?",
+                "3. You have 4 cookies and get 3 more. How many now?",
+                "4. There are 9 birds. 4 fly away. How many are left?",
+                "5. Solve: 6 + 4 = ?"
+            ],
+            description: "Mastery of addition and subtraction facts within 10."
+        };
+        iReadyData["K"]["On Grade Level"]["Math"]["Algebraic Thinking"] = {
+            id: "K-OG-M-AT-1",
+            name: "Identifying Patterns and Rules",
+            problems: [
+                "1. The pattern is 'clap, clap, stomp, clap, clap, stomp'. What is the rule?",
+                "2. Extend the pattern: Red, Yellow, Blue, Red, Yellow, Blue, _ _",
+                "3. What's wrong with this pattern: ▲●▲●▲?",
+                "4. Create a pattern that goes 'AABB'.",
+                "5. If a pattern repeats every 3 shapes, what could it be?"
+            ],
+            description: "Identifies and extends more complex patterns and determines the pattern rule."
+        };
+        iReadyData["K"]["On Grade Level"]["Math"]["Geometry"] = {
+            id: "K-OG-M-GEO-1",
+            name: "Composing and Decomposing Shapes",
+            problems: [
+                "1. Draw two triangles to make a rectangle.",
+                "2. Can you make a bigger square using smaller squares? Draw it.",
+                "3. How many small triangles fit into this big triangle?",
+                "4. Show how to make a hexagon using other shapes.",
+                "5. If you cut a square in half, what shapes do you get?"
+            ],
+            description: "Focuses on putting shapes together and breaking them apart."
+        };
+        iReadyData["K"]["On Grade Level"]["Math"]["Measurement & Data"] = {
+            id: "K-OG-M-MD-1",
+            name: "Ordering by Size (Length, Weight, Capacity)",
+            problems: [
+                "1. Order these from shortest to longest: (pencil, book, ruler).",
+                "2. Arrange these from lightest to heaviest: (feather, rock, apple).",
+                "3. Which container holds the most, the least? (small cup, medium bowl, large jug).",
+                "4. Draw three objects and order them by height.",
+                "5. If you have a small, medium, and large box, which holds the most?"
+            ],
+            description: "Orders objects by various measurable attributes."
+        };
+        iReadyData["K"]["On Grade Level"]["Math"]["Problem Solving"] = {
+            id: "K-OG-M-PS-1",
+            name: "Solving Addition & Subtraction Word Problems (within 10)",
+            problems: [
+                "1. Lily has 6 dolls. She gets 3 more. How many dolls does Lily have now?",
+                "2. There are 8 cookies. John eats 2. How many cookies are left?",
+                "3. There are 5 red apples and 5 green apples. How many apples in total?",
+                "4. Sam had 7 toy cars. He gave 4 to his friend. How many does he have now?",
+                "5. Write a story problem for 10 - 3 = 7."
+            ],
+            description: "Solves simple addition and subtraction word problems within 10."
+        };
+
+
+        // Global state variables
+        let selectedSubject = 'Reading'; // Default
+        let selectedSubCategory = 'All'; // Default
+        let showModal = false;
+        let modalContent = null;
+        let currentModalGrade = null; // Store for "back to interventions"
+        let currentModalScoreLevel = null; // Store for "back to interventions"
+
+        // DOM elements
+        const readingSubjectBtn = document.getElementById('readingSubjectBtn');
+        const mathSubjectBtn = document.getElementById('mathSubjectBtn');
+        const subCategoryButtonsContainer = document.getElementById('subCategoryButtonsContainer');
+        const matrixContainer = document.getElementById('matrixContainer');
+        const interventionModal = document.getElementById('interventionModal');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+
+        // Functions to update the UI
+        function updateSubjectButtons() {
+            // Reset styles for both buttons
+            readingSubjectBtn.style.backgroundColor = '#60A5FA'; // Blue-300
+            readingSubjectBtn.style.color = '#FFFFFF';
+            readingSubjectBtn.style.borderColor = '#1E40AF'; // Blue-800
+
+            mathSubjectBtn.style.backgroundColor = '#9CA3AF'; // Gray-300
+            mathSubjectBtn.style.color = '#1F2937'; // Gray-800
+            mathSubjectBtn.style.borderColor = '#4B5563'; // Gray-600
+
+            if (selectedSubject === 'Reading') {
+                readingSubjectBtn.style.backgroundColor = '#2563EB'; // Blue-600
+                readingSubjectBtn.style.color = '#FFFFFF';
+                readingSubjectBtn.style.borderColor = '#1E40AF'; // Blue-800
+            } else {
+                mathSubjectBtn.style.backgroundColor = '#10B981'; // Green-600
+                mathSubjectBtn.style.color = '#FFFFFF';
+                mathSubjectBtn.style.borderColor = '#047857'; // Green-800
+            }
+        }
+
+        function renderSubCategoryButtons() {
+            subCategoryButtonsContainer.innerHTML = ''; // Clear previous buttons
+
+            const subCats = selectedSubject === 'Reading' ? readingSubcategories : mathSubcategories;
+
+            subCats.forEach(subCat => {
+                const button = document.createElement('button');
+                button.textContent = subCat;
+                button.style.padding = '8px 16px';
+                button.style.borderRadius = '9999px';
+                button.style.fontSize = '14px';
+                button.style.fontWeight = 'bold';
+                button.style.border = '2px solid';
+                button.style.cursor = 'pointer';
+
+                if (selectedSubCategory === subCat) {
+                    if (selectedSubject === 'Reading') {
+                        button.style.backgroundColor = '#2563EB'; // Blue-600
+                        button.style.color = '#FFFFFF';
+                        button.style.borderColor = '#1E40AF'; // Blue-800
+                    } else {
+                        button.style.backgroundColor = '#10B981'; // Green-600
+                        button.style.color = '#FFFFFF';
+                        button.style.borderColor = '#047857'; // Green-800
+                    }
+                } else {
+                    if (selectedSubject === 'Reading') {
+                        button.style.backgroundColor = '#BFDBFE'; // Blue-200
+                        button.style.color = '#1E40AF'; // Blue-800
+                        button.style.borderColor = '#93C5FD'; // Blue-300
+                    } else {
+                        button.style.backgroundColor = '#A7F3D0'; // Green-200
+                        button.style.color = '#047857'; // Green-800
+                        button.style.borderColor = '#6EE7B7'; // Green-300
+                    }
+                }
+
+                button.addEventListener('click', () => {
+                    selectedSubCategory = subCat;
+                    renderSubCategoryButtons(); // Re-render subcategory buttons to update active state
+                    renderMatrix(); // Re-render matrix to reflect new filter
+                });
+                subCategoryButtonsContainer.appendChild(button);
+            });
+        }
+
+
+        function renderMatrix() {
+            matrixContainer.innerHTML = ''; // Clear previous matrix
+
+            // Header Row: Grade Levels (X-axis)
+            const headerRow = document.createElement('div');
+            headerRow.style.display = 'grid';
+            headerRow.style.gridTemplateColumns = '150px repeat(6, minmax(100px, 1fr))';
+            headerRow.style.gap = '8px';
+
+            headerRow.innerHTML = `
+                <div style="padding: 12px; text-align: center; font-weight: bold; color: #4B5563; font-size: 14px; display: flex; align-items: center; justify-content: center;">
+                    Score / Grade
+                </div>
+                ${grades.map(grade => `
+                    <div style="padding: 12px; text-align: center; font-weight: bold; background-color: #6366F1; color: #FFFFFF; border-radius: 8px; font-size: 18px;">
+                        Grade ${grade}
+                    </div>
+                `).join('')}
+            `;
+            matrixContainer.appendChild(headerRow);
+
+            // Data Rows: Score Levels (Y-axis) and Buttons
+            scoreLevels.forEach(scoreLevel => {
+                const dataRow = document.createElement('div');
+                dataRow.style.display = 'grid';
+                dataRow.style.gridTemplateColumns = '150px repeat(6, minmax(100px, 1fr))';
+                dataRow.style.gap = '8px';
+
+                // Score Level Header
+                const scoreLevelHeader = document.createElement('div');
+                scoreLevelHeader.style.padding = '12px';
+                scoreLevelHeader.style.fontWeight = 'bold';
+                scoreLevelHeader.style.backgroundColor = '#2563EB'; // Blue-600
+                scoreLevelHeader.style.color = '#FFFFFF';
+                scoreLevelHeader.style.borderRadius = '8px';
+                scoreLevelHeader.style.display = 'flex';
+                scoreLevelHeader.style.alignItems = 'center';
+                scoreLevelHeader.style.justifyContent = 'center';
+                scoreLevelHeader.style.textAlign = 'center';
+                scoreLevelHeader.style.fontSize = '14px';
+                scoreLevelHeader.textContent = scoreLevel;
+                dataRow.appendChild(scoreLevelHeader);
+
+                // Buttons for each cell
+                grades.forEach(grade => {
+                    const button = document.createElement('button');
+                    button.style.padding = '16px';
+                    button.style.backgroundColor = '#F3F4F6'; // Gray-100
+                    button.style.color = '#4B5563'; // Gray-700
+                    button.style.borderRadius = '8px';
+                    button.style.border = '1px solid #E5E7EB'; // Gray-200
+                    button.style.display = 'flex';
+                    button.style.alignItems = 'center';
+                    button.style.justifyContent = 'center';
+                    button.style.fontSize = '14px';
+                    button.style.fontWeight = 'normal';
+                    button.style.textAlign = 'center';
+                    button.style.cursor = 'pointer';
+                    button.textContent = 'View Interventions';
+                    button.addEventListener('click', () => handleCellClick(grade, scoreLevel));
+
+                    // Determine if there's data for the currently selected subject AND subcategory in this cell
+                    const hasDataForSelectedFilter = Object.keys(iReadyData[grade]?.[scoreLevel]?.[selectedSubject] || {}).some(subCatKey => {
+                        return selectedSubCategory === 'All' || subCatKey === selectedSubCategory;
+                    });
+
+                    if (hasDataForSelectedFilter) {
+                        button.style.backgroundColor = '#E0F2F7'; // Light blue if data
+                        button.style.border = '1px solid #90CAF9';
+                    } else {
+                        button.style.backgroundColor = '#F8FAFC'; // Light grey if no data
+                        button.style.border = '1px solid #E2E8F0';
+                    }
+                    dataRow.appendChild(button);
+                });
+                matrixContainer.appendChild(dataRow);
+            });
+        }
+
+        function handleCellClick(grade, scoreLevel) {
+            currentModalGrade = grade; // Store for back button
+            currentModalScoreLevel = scoreLevel; // Store for back button
+
+            const gradeScoreData = iReadyData[grade]?.[scoreLevel];
+            if (gradeScoreData) {
+                modalContent = {
+                    type: 'interventions',
+                    grade,
+                    scoreLevel,
+                    data: gradeScoreData, // Pass the entire grade/score level data
+                    subject: selectedSubject,
+                    selectedSubCategory: selectedSubCategory // This will be used for filtering within the modal
+                };
+                showModal = true;
+                renderModal();
+            } else {
+                modalContent = {
+                    type: 'message',
+                    message: `No specific interventions found for ${scoreLevel} in Grade ${grade}.`
+                };
+                showModal = true;
+                renderModal();
+            }
+        }
+
+        function handleViewAssessment(interventionDetails) {
+            modalContent = {
+                type: 'assessment',
+                data: interventionDetails
+            };
+            renderModal();
+        }
+
+        function handleBackToInterventions() {
+            modalContent = {
+                type: 'interventions',
+                grade: currentModalGrade,
+                scoreLevel: currentModalScoreLevel,
+                data: iReadyData[currentModalGrade]?.[currentModalScoreLevel],
+                subject: selectedSubject, // Use the global selectedSubject
+                selectedSubCategory: selectedSubCategory // Use the global selectedSubCategory
+            };
+            renderModal();
+        }
+
+        function handlePrintAssessment() {
+            if (!modalContent || !modalContent.data) {
+                console.error("No assessment data to print.");
+                return;
+            }
+
+            // Create a new window for printing to ensure isolation
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Print Assessment</title>
+                    <style>
+                        body { margin: 20px; padding: 0; font-family: sans-serif; color: #000; }
+                        .print-header { text-align: center; margin-bottom: 20px; }
+                        .print-problems { margin-top: 20px; }
+                        .print-problem-item { margin-bottom: 15px; page-break-inside: avoid; }
+                        .print-problem-item p { margin: 0; }
+                        .print-problem-item hr { border: none; border-bottom: 1px dashed #ccc; margin-top: 10px; width: 80%; }
+                        .assessment-description { font-style: italic; color: #555; margin-bottom: 20px; }
+                        h2 { color: #333; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2 style="font-size: 24px; font-weight: bold; color: #374151; margin-bottom: 8px;">Assessment: ${modalContent.data.name}</h2>
+                        <p style="font-size: 16px; color: #4B5563;">Grade Level: ${modalContent.data.grade}</p>
+                        <p style="font-size: 16px; color: #4B5563;">Sub-Category: ${modalContent.data.subCategory}</p>
+                        <p class="assessment-description" style="font-style: italic; color: #6B7280; margin-top: 16px; margin-bottom: 20px;">${modalContent.data.description}</p>
+                    </div>
+                    <div class="print-problems" style="margin-top: 24px;">
+                        <h4 style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: #374151;">Problems:</h4>
+                        <ol style="list-style-type: decimal; padding-left: 20px;">
+                            ${modalContent.data.problems.map((p, index) => `
+                                <li style="margin-bottom: 16px;">
+                                    <p style="font-size: 16px; color: #374151; margin: 0;">${p}</p>
+                                    <hr style="border: none; border-bottom: 1px dashed #CCC; margin-top: 10px; width: 80%;">
+                                </li>
+                            `).join('')}
+                        </ol>
+                    </div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+            printWindow.close();
+        }
+
+        function renderModal() {
+            if (showModal) {
+                interventionModal.style.display = 'flex'; // Show flex container
+
+                modalTitle.textContent = ''; // Clear title
+                modalBody.innerHTML = '';    // Clear body
+
+                if (modalContent.type === 'interventions') {
+                    modalTitle.textContent = `Interventions for Grade ${modalContent.grade}, ${modalContent.scoreLevel} (${modalContent.subject}${modalContent.selectedSubCategory !== 'All' ? ' - ' + modalContent.selectedSubCategory : ''})`;
+
+                    let filteredInterventions = [];
+                    if (modalContent.data && modalContent.data[modalContent.subject]) {
+                        const subjectInterventions = modalContent.data[modalContent.subject];
+                        if (modalContent.selectedSubCategory === 'All') {
+                            filteredInterventions = Object.entries(subjectInterventions);
+                        } else if (subjectInterventions[modalContent.selectedSubCategory]) {
+                            filteredInterventions = [[modalContent.selectedSubCategory, subjectInterventions[modalContent.selectedSubCategory]]];
+                        }
+                    }
+
+                    if (filteredInterventions.length > 0) {
+                        filteredInterventions.forEach(([subCategory, intervention]) => {
+                            const div = document.createElement('div');
+                            div.style.marginBottom = '16px';
+                            div.style.padding = '16px';
+                            div.style.border = '1px solid #BFDBFE'; // Light blue border
+                            div.style.borderRadius = '8px';
+                            div.style.backgroundColor = '#EFF6FF'; // Light blue background
+                            div.innerHTML = `
+                                <h4 style="font-weight: bold; font-size: 18px; color: #1E40AF;">${modalContent.subject}: ${subCategory}: ${intervention.name}</h4>
+                                <p style="font-size: 14px; color: #4B5563; margin-bottom: 8px;">${intervention.description}</p>
+                            `;
+                            const viewAssessmentBtn = document.createElement('button');
+                            viewAssessmentBtn.style.marginTop = '8px';
+                            viewAssessmentBtn.style.backgroundColor = '#4F46E5'; // Indigo-600
+                            viewAssessmentBtn.style.color = '#FFFFFF';
+                            viewAssessmentBtn.style.fontWeight = 'bold';
+                            viewAssessmentBtn.style.padding = '8px 16px';
+                            viewAssessmentBtn.style.borderRadius = '6px';
+                            viewAssessmentBtn.style.border = 'none';
+                            viewAssessmentBtn.style.cursor = 'pointer';
+                            viewAssessmentBtn.textContent = 'View Printable Assessment';
+                            viewAssessmentBtn.addEventListener('click', () => handleViewAssessment({ ...intervention, grade: modalContent.grade, scoreLevel: modalContent.scoreLevel, subCategory: `${modalContent.subject}: ${subCategory}` }));
+                            div.appendChild(viewAssessmentBtn);
+                            modalBody.appendChild(div);
+                        });
+                    } else {
+                        modalBody.innerHTML = `<p style="font-size: 18px; color: #4B5563;">No specific ${modalContent.selectedSubCategory !== 'All' ? modalContent.selectedSubCategory + ' ' : ''}${modalContent.subject} interventions found for this combination.</p>`;
+                    }
+
+                } else if (modalContent.type === 'assessment') {
+                    modalTitle.textContent = `Assessment: ${modalContent.data.name}`;
+                    modalBody.innerHTML = `
+                        <p style="color: #4B5563; margin-bottom: 8px;"><strong>Grade Level:</strong> ${modalContent.data.grade}</p>
+                        <p style="color: #4B5563; margin-bottom: 8px;"><strong>Sub-Category:</strong> ${modalContent.data.subCategory}</p>
+                        <p style="color: #6B7280; margin-bottom: 16px; font-style: italic;">${modalContent.data.description}</p>
+
+                        <h4 style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: #374151;">Problems:</h4>
+                        <ol style="list-style-type: decimal; padding-left: 20px;">
+                            ${modalContent.data.problems.map((problem, index) => `
+                                <li style="margin-bottom: 16px;">
+                                    <p style="font-size: 16px; color: #374151;">${problem}</p>
+                                    <hr style="border: none; border-bottom: 1px dashed #CCC; margin-top: 8px;" />
+                                </li>
+                            `).join('')}
+                        </ol>
+
+                        <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                            <button id="backToInterventionsBtn" style="background-color: #D1D5DB; color: #1F2937; font-weight: bold; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;">
+                                Back to Interventions
+                            </button>
+                            <button id="printAssessmentBtn" style="background-color: #10B981; color: #FFFFFF; font-weight: bold; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer;">
+                                Print Assessment
+                                <!-- SVG for print icon - inline SVG is HTML friendly -->
+                                <svg xmlns="http://www.w3.org/2000/svg" style="height: 20px; width: 20px; display: inline-block; margin-left: 8px; vertical-align: middle;" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 4V2a2 2 0 012-2h6a2 2 0 012 2v2h2a2 2 0 012 2v8a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2zm0 2h10v6H5V6zm5 7a1 1 0 100 2h4a1 1 0 100-2h-4z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    document.getElementById('backToInterventionsBtn').addEventListener('click', () => handleBackToInterventions(modalContent.data.grade, modalContent.data.scoreLevel, modalContent.data.subCategory.split(':')[0]));
+                    document.getElementById('printAssessmentBtn').addEventListener('click', handlePrintAssessment);
+                } else if (modalContent.type === 'message') {
+                    modalTitle.textContent = 'Information';
+                    modalBody.innerHTML = `<p style="font-size: 18px; color: #4B5563;">${modalContent.message}</p>`;
+                }
+
+            } else {
+                interventionModal.style.display = 'none';
+            }
+        }
+
+        // Initial rendering and event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            updateSubjectButtons();
+            renderSubCategoryButtons();
+            renderMatrix();
+
+            readingSubjectBtn.addEventListener('click', () => {
+                selectedSubject = 'Reading';
+                selectedSubCategory = 'All'; // Reset subcategory when subject changes
+                updateSubjectButtons();
+                renderSubCategoryButtons();
+                renderMatrix();
+            });
+
+            mathSubjectBtn.addEventListener('click', () => {
+                selectedSubject = 'Math';
+                selectedSubCategory = 'All'; // Reset subcategory when subject changes
+                updateSubjectButtons();
+                renderSubCategoryButtons();
+                renderMatrix();
+            });
+
+            modalCloseBtn.addEventListener('click', () => {
+                showModal = false;
+                renderModal();
+            });
+        });
+
+    </script>
+</body>
+</html>
